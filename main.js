@@ -8,31 +8,77 @@ var mainState = (function (_super) {
     __extends(mainState, _super);
     function mainState() {
         _super.apply(this, arguments);
+        //var de movimiento
+        this.FB_MAX_SPEED = 200;
+        this.FB_FRICTION = 150;
+        this.FB_ACCELERATION = 180;
+        //Var animacion
+        this.fireballFrameWitdh = 3072 / 6;
+        this.fireballFramRate = 200;
     }
     mainState.prototype.preload = function () {
         _super.prototype.preload.call(this);
-        this.load.image('ufo', 'assets/UFO.png');
-        this.load.image('pickup', 'assets/Pickup.png');
-        this.load.image('background', 'assets/Background.png');
+        this.load.spritesheet('fireball', 'assets/flameShotSet.png', this.fireballFrameWitdh, 512, 6);
+        this.load.image('bg', 'assets/bgSpace.png');
+        this.physics.startSystem(Phaser.Physics.ARCADE);
     };
     mainState.prototype.create = function () {
         _super.prototype.create.call(this);
-        var background;
-        background = this.add.sprite(0, 0, 'background');
-        var scale = this.world.height / background.height;
-        background.scale.setTo(scale, scale);
-        this.ufo = this.add.sprite(this.world.centerX, this.world.centerY, 'ufo');
-        this.ufo.scale.setTo(scale - 0.05, scale - 0.05);
-        this.ufo.anchor.setTo(0.5, 0.5);
+        this.createBackground();
+        this.createFireball();
+        this.cursor = this.input.keyboard.createCursorKeys();
+    };
+    mainState.prototype.createBackground = function () {
+        var bg;
+        bg = this.add.sprite(0, 0, 'bg');
+        var scale = this.world.height / bg.height;
+        bg.scale.setTo(scale, scale);
+    };
+    mainState.prototype.createFireball = function () {
+        var anim;
+        this.fireball = this.add.sprite(this.world.centerX, this.world.centerY, 'fireball');
+        this.fireball.scale.setTo(0.15, 0.15);
+        this.fireball.anchor.setTo(0.5, 0.5);
+        //variables Animacion
+        anim = this.fireball.animations.add('run');
+        anim.play(15, true);
+        //variables de movimiento
+        this.physics.enable(this.fireball);
+        this.fireball.body.collideWorldBounds = true; //Colision
+        this.fireball.body.bounce.setTo(0.8); //Rebote
+        this.fireball.body.maxVelocity.setTo(this.FB_MAX_SPEED, this.FB_MAX_SPEED);
+        this.fireball.body.drag.setTo(this.FB_FRICTION, this.FB_FRICTION);
     };
     mainState.prototype.update = function () {
         _super.prototype.update.call(this);
+        this.fireballMove();
     };
+    mainState.prototype.fireballMove = function () {
+        if (this.cursor.left.isDown) {
+            this.fireball.body.acceleration.x = -this.FB_ACCELERATION;
+        }
+        else if (this.cursor.right.isDown) {
+            this.fireball.body.acceleration.x = this.FB_ACCELERATION;
+        }
+        else if (this.cursor.up.isDown) {
+            this.fireball.body.acceleration.y = -this.FB_ACCELERATION;
+        }
+        else if (this.cursor.down.isDown) {
+            this.fireball.body.acceleration.y = this.FB_ACCELERATION;
+        }
+        else {
+            this.fireball.body.acceleration.y = 0;
+            this.fireball.body.acceleration.x = 0;
+        }
+        var targetAngle = this.angleBetween(this.x, this.y, this.game.input.activePointer.x, this.game.input.activePointer.y);
+        this.fireball.rotation = targetAngle;
+    };
+    ;
     return mainState;
 })(Phaser.State);
 var SimpleGame = (function () {
     function SimpleGame() {
-        this.game = new Phaser.Game(600, 600, Phaser.AUTO, 'gameDiv');
+        this.game = new Phaser.Game(500, 500, Phaser.AUTO, 'gameDiv');
         this.game.state.add('main', mainState);
         this.game.state.start('main');
     }
@@ -41,6 +87,4 @@ var SimpleGame = (function () {
 window.onload = function () {
     var game = new SimpleGame();
 };
-git;
-add;
 //# sourceMappingURL=main.js.map
