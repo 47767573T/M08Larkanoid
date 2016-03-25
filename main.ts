@@ -3,6 +3,10 @@
 class mainState extends Phaser.State {
     game: Phaser.Game;
     private fireball:Phaser.Sprite;
+    private brick:Phaser.Sprite;
+    private paddle:Phaser.Sprite;
+    private ball:Phaser.Sprite;
+
 
     //var de movimiento
     private FB_MAX_SPEED = 200;
@@ -10,24 +14,23 @@ class mainState extends Phaser.State {
     private FB_ACCELERATION = 180;
 
     //Var animacion
-    private fireballFrameWitdh = 3072/6;
-    private fireballFramRate = 200;
-
+    //private fireballFrameWitdh = 3072/6;
+    //private fireballFrameRate = 200;
 
 
     private cursor:Phaser.CursorKeys;
 
-
-
-
-
     preload():void {
         super.preload();
-        this.load.spritesheet('fireball'
+        /*this.load.spritesheet('fireball'
             ,'assets/flameShotSet.png'
             ,this.fireballFrameWitdh
             ,512
-            ,6);
+            ,6);*/
+
+        this.load.image('brick', 'assets/png/element_blue_rectangle.png');
+        this.load.image('pad', 'assets/png/paddleBlu.png');
+        this.load.image('ball', 'assets/png/ballBlue.png');
         this.load.image('bg', 'assets/bgSpace.png');
 
         this.physics.startSystem(Phaser.Physics.ARCADE);
@@ -36,9 +39,14 @@ class mainState extends Phaser.State {
     create():void {
         super.create();
         this.createBackground();
-        this.createFireball();
+
+        this.createBall();
+        //this.createFireball();
+
+        this.createBricks()
 
         this.cursor = this.input.keyboard.createCursorKeys();
+        this.physics.arcade.checkCollision.down = false;
     }
 
     private createBackground(){
@@ -46,6 +54,13 @@ class mainState extends Phaser.State {
         bg = this.add.sprite(0, 0, 'bg');
         var scale = this.world.height / bg.height;
         bg.scale.setTo(scale, scale);
+    }
+
+    private createBall(){
+        var ball;
+        ball = this.add.sprite(0.9, 0.1, 'ball');
+        var scale = this.world.height / bg.height;
+        ball.scale.setTo(scale, scale);
     }
 
     private createFireball(){
@@ -59,12 +74,15 @@ class mainState extends Phaser.State {
         anim = this.fireball.animations.add('run');
         anim.play(15, true);
 
+
         //variables de movimiento
         this.physics.enable(this.fireball);
-        this.fireball.body.collideWorldBounds = true;   //Colision
-        this.fireball.body.bounce.setTo(0.8);             //Rebote
+        this.fireball.body.collideWorldBounds = true;       //Colision
+        this.fireball.body.bounce.setTo(0.8);               //Rebote
         this.fireball.body.maxVelocity.setTo(this.FB_MAX_SPEED, this.FB_MAX_SPEED);
         this.fireball.body.drag.setTo(this.FB_FRICTION, this.FB_FRICTION);
+
+        this.fireball.rotation = this.physics.arcade.angleToPointer(this.fireball)
 
     }
 
@@ -73,6 +91,8 @@ class mainState extends Phaser.State {
         super.update();
 
         this.fireballMove();
+
+        this.fireball.rotation = this.physics.arcade.angleToPointer(this.fireball)
     }
 
     private fireballMove(){
@@ -92,14 +112,6 @@ class mainState extends Phaser.State {
             this.fireball.body.acceleration.y =0;
             this.fireball.body.acceleration.x =0;
         }
-
-        var targetAngle = this.angleBetween(
-            this.x
-            ,this.y
-            ,this.game.input.activePointer.x
-            ,this.game.input.activePointer.y
-        );
-        this.fireball.rotation = targetAngle;
     };
 
 }
