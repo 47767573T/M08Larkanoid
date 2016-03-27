@@ -3,15 +3,18 @@
 class mainState extends Phaser.State {
     game: Phaser.Game;
     private fireball:Phaser.Sprite;
-    private brick:Phaser.Sprite;
+    private bricks:Phaser.Group;
+    //private brick:Phaser.Sprite;
     private pad:Phaser.Sprite;
     private ball:Phaser.Sprite;
 
     //var de items
-    private bricksRow = 4;
+    private bricksRow = 5;
     private bricksCol = 10;
 
     //var de movimiento
+    private BALL_MAX_SPEED = 200;
+
     private FB_MAX_SPEED = 200;
     private FB_FRICTION = 150;
     private FB_ACCELERATION = 180;
@@ -37,7 +40,6 @@ class mainState extends Phaser.State {
         this.load.image('bg', 'assets/bgSpace.png');
 
         this.physics.startSystem(Phaser.Physics.ARCADE);
-        this.physics.arcade.checkCollision.down = false;
     }
 
     create():void {
@@ -45,9 +47,10 @@ class mainState extends Phaser.State {
         this.createBackground();
 
         this.createBall();
-        this.createFireball();
+        this.createPad();
+        //this.createFireball();
 
-        this.createBricks(4, 9);
+        this.createBricks(this.bricksRow, this.bricksCol);
 
         this.cursor = this.input.keyboard.createCursorKeys();
         this.physics.arcade.checkCollision.down = false;
@@ -62,26 +65,45 @@ class mainState extends Phaser.State {
 
     private createBall(){
 
-         this.ball = this.add.sprite(0.9, 0.1, 'ball');
-         this.ball.scale.setTo(0.5, 0.5);
+        this.ball = this.add.sprite(this.world.centerX, this.world.centerY, 'ball');
+        this.ball.scale.setTo(0.5, 0.5);
+        this.physics.enable(this.ball);
+
+        this.ball.body.maxVelocity.setTo(this.BALL_MAX_SPEED);
+        this.ball.body.collideWorldBounds = true;
+        this.ball.body.bounce.setTo(1);
+    }
+
+    private createPad(){
+
+        this.pad = this.add.sprite(this.world.centerX,440, 'pad');
+
+        this.pad.scale.setTo(0.5, 0.5);
+        this.physics.enable(this.pad);
+
+        this.pad.body.collideWorldBounds = true;
+        this.pad.body.immovable = true;
+
     }
 
     private createBricks(row, col){
+        this.bricks = this.add.group();
+        this.bricks.enableBody = true;
+        this.bricks.physicsBodyType = Phaser.Physics.ARCADE;
+
         for (var j = 0; j < row; j++){
             for(var i = 0; i < col; i++){
-                this.brick = this.add.sprite(i*50+30, j*20+20, 'brick');
-                this.brick.scale.setTo(0.5, 0.5);
-                this.physics.arcade.collide(this.brick, this.fireball, true);
-                this.physics.enable(this.brick);
+                var brick = new Brick (this.game, i*50+30, j*20+30, 'brick');
+                brick.scale.setTo(0.5, 0.5);
+                this.bricks.add(brick);
 
-
+                //this.brick = this.add.sprite(i*50+30, j*20+20, 'brick');
+                //
             }
         }
     }
 
-
-
-    private createFireball(){
+/*    private createFireball(){
         var anim;
 
         this.fireball = this.add.sprite(this.world.centerX, this.world.centerY, 'fireball');
@@ -91,7 +113,6 @@ class mainState extends Phaser.State {
         //variables Animacion
         anim = this.fireball.animations.add('run');
         anim.play(15, true);
-
 
         //variables de movimiento
         this.physics.enable(this.fireball);
@@ -103,18 +124,34 @@ class mainState extends Phaser.State {
         this.fireball.rotation = this.physics.arcade.angleToPointer(this.fireball)
 
     }
-
+*/
 
     update():void {
         super.update();
 
         this.padMove();
-        this.fireballMove();
+        this.ballMove();
+        //this.fireballMove();
 
-        this.fireball.rotation = this.physics.arcade.angleToPointer(this.fireball)
+        //this.fireball.rotation = this.physics.arcade.angleToPointer(this.pad)
     }
 
     private padMove(){
+        if (this.cursor.left.isDown) {
+            this.pad.body.velocity.x = -this.FB_ACCELERATION;
+        }else if (this.cursor.right.isDown) {
+            this.pad.body.velocity.x =this.FB_ACCELERATION;
+        } else {
+            this.pad.body.velocity.x = 0;
+        }
+
+        //variables de movimiento
+        this.physics.enable(this.pad);
+        this.fireball.body.collideWorldBounds = true;       //Colision
+
+    }
+
+    private ballMove(){
 
     }
 
@@ -149,6 +186,25 @@ class SimpleGame {
         this.game.state.start('main');
     }
 }
+
+class Brick extends Phaser.Sprite {
+
+    constructor(game:Phaser.Game, x:number, y:number, key:string|Phaser.RenderTexture|Phaser.BitmapData|PIXI.Texture) {
+        super(game, x, y, key);
+
+        this.game.physics.enable(this, Phaser.Physics.ARCADE);
+        this.anchor.setTo(0.5, 0.5);
+
+        this.body.bounce.setTo(1);
+        this.body.immovable = true;
+
+    }
+
+    update():void {
+        super.update();
+    }
+}
+
 
 window.onload = () => {
     var game = new SimpleGame();
