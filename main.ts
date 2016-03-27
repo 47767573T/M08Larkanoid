@@ -4,9 +4,12 @@ class mainState extends Phaser.State {
     game: Phaser.Game;
     private fireball:Phaser.Sprite;
     private brick:Phaser.Sprite;
-    private paddle:Phaser.Sprite;
+    private pad:Phaser.Sprite;
     private ball:Phaser.Sprite;
 
+    //var de items
+    private bricksRow = 4;
+    private bricksCol = 10;
 
     //var de movimiento
     private FB_MAX_SPEED = 200;
@@ -14,19 +17,19 @@ class mainState extends Phaser.State {
     private FB_ACCELERATION = 180;
 
     //Var animacion
-    //private fireballFrameWitdh = 3072/6;
-    //private fireballFrameRate = 200;
+    private fireballFrameWitdh = 3072/6;
+    private fireballFrameRate = 200;
 
 
     private cursor:Phaser.CursorKeys;
 
     preload():void {
         super.preload();
-        /*this.load.spritesheet('fireball'
+        this.load.spritesheet('fireball'
             ,'assets/flameShotSet.png'
             ,this.fireballFrameWitdh
             ,512
-            ,6);*/
+            ,6);
 
         this.load.image('brick', 'assets/png/element_blue_rectangle.png');
         this.load.image('pad', 'assets/png/paddleBlu.png');
@@ -34,6 +37,7 @@ class mainState extends Phaser.State {
         this.load.image('bg', 'assets/bgSpace.png');
 
         this.physics.startSystem(Phaser.Physics.ARCADE);
+        this.physics.arcade.checkCollision.down = false;
     }
 
     create():void {
@@ -41,9 +45,9 @@ class mainState extends Phaser.State {
         this.createBackground();
 
         this.createBall();
-        //this.createFireball();
+        this.createFireball();
 
-        this.createBricks()
+        this.createBricks(4, 9);
 
         this.cursor = this.input.keyboard.createCursorKeys();
         this.physics.arcade.checkCollision.down = false;
@@ -57,11 +61,25 @@ class mainState extends Phaser.State {
     }
 
     private createBall(){
-        var ball;
-        ball = this.add.sprite(0.9, 0.1, 'ball');
-        var scale = this.world.height / bg.height;
-        ball.scale.setTo(scale, scale);
+
+         this.ball = this.add.sprite(0.9, 0.1, 'ball');
+         this.ball.scale.setTo(0.5, 0.5);
     }
+
+    private createBricks(row, col){
+        for (var j = 0; j < row; j++){
+            for(var i = 0; i < col; i++){
+                this.brick = this.add.sprite(i*50+30, j*20+20, 'brick');
+                this.brick.scale.setTo(0.5, 0.5);
+                this.physics.arcade.collide(this.brick, this.fireball, true);
+                this.physics.enable(this.brick);
+
+
+            }
+        }
+    }
+
+
 
     private createFireball(){
         var anim;
@@ -90,9 +108,14 @@ class mainState extends Phaser.State {
     update():void {
         super.update();
 
+        this.padMove();
         this.fireballMove();
 
         this.fireball.rotation = this.physics.arcade.angleToPointer(this.fireball)
+    }
+
+    private padMove(){
+
     }
 
     private fireballMove(){
@@ -112,7 +135,7 @@ class mainState extends Phaser.State {
             this.fireball.body.acceleration.y =0;
             this.fireball.body.acceleration.x =0;
         }
-    };
+    }
 
 }
 
