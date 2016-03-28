@@ -13,7 +13,10 @@ class mainState extends Phaser.State {
     private bricksCol = 10;
 
     //var de movimiento
-    private BALL_MAX_SPEED = 200;
+    private BALL_MAX_SPEED = 400;
+    private BALL_MIN_SPEED = 200;
+    private BALL_ACCELERATION = 20;
+    private onGame = false;
 
     private FB_MAX_SPEED = 200;
     private FB_FRICTION = 150;
@@ -69,9 +72,10 @@ class mainState extends Phaser.State {
         this.ball.scale.setTo(0.5, 0.5);
         this.physics.enable(this.ball);
 
-        this.ball.body.maxVelocity.setTo(this.BALL_MAX_SPEED);
+        this.ball.body.bounce.setTo(1.2);
+        this.ball.body.maxVelocity.setTo(this.BALL_MAX_SPEED, this.BALL_MAX_SPEED);
         this.ball.body.collideWorldBounds = true;
-        this.ball.body.bounce.setTo(1);
+
     }
 
     private createPad(){
@@ -81,7 +85,8 @@ class mainState extends Phaser.State {
         this.pad.scale.setTo(0.5, 0.5);
         this.physics.enable(this.pad);
 
-        this.pad.body.collideWorldBounds = true;
+        this.pad.body.bounce.set(1.2)
+        this.pad.body.collideWorldBounds = true;        ;
         this.pad.body.immovable = true;
 
     }
@@ -131,27 +136,40 @@ class mainState extends Phaser.State {
 
         this.padMove();
         this.ballMove();
+
+        if (!this.onGame){
+            this.ball.body.velocity.x= this.BALL_MIN_SPEED;
+            this.ball.body.velocity.y= this.BALL_MIN_SPEED;
+
+        }
+
+        this.physics.arcade.collide(this.ball, this.pad, this.ballHitPad, null, this);
+        this.physics.arcade.collide(this.ball, this.pad);
+
+
         //this.fireballMove();
 
         //this.fireball.rotation = this.physics.arcade.angleToPointer(this.pad)
     }
 
     private padMove(){
+
         if (this.cursor.left.isDown) {
-            this.pad.body.velocity.x = -this.FB_ACCELERATION;
+            this.pad.body.velocity.x = -this.BALL_MAX_SPEED;
         }else if (this.cursor.right.isDown) {
-            this.pad.body.velocity.x =this.FB_ACCELERATION;
+            this.pad.body.velocity.x =this.BALL_MAX_SPEED;
         } else {
             this.pad.body.velocity.x = 0;
         }
 
-        //variables de movimiento
-        this.physics.enable(this.pad);
-        this.fireball.body.collideWorldBounds = true;       //Colision
+
 
     }
 
     private ballMove(){
+        this.physics.enable(this.ball);
+        this.ball.body.collideWorldBounds = true;       //Colision
+
 
     }
 
@@ -172,6 +190,18 @@ class mainState extends Phaser.State {
             this.fireball.body.acceleration.y =0;
             this.fireball.body.acceleration.x =0;
         }
+    }
+
+    private ballHitPad(ball:Phaser.Sprite, pad:Phaser.Sprite){
+
+        if (ball.body.velocity.x != this.BALL_MIN_SPEED){
+            this.ball.body.acceleration.y = this.BALL_MIN_SPEED;
+            this.ball.body.acceleration.x = this.BALL_MIN_SPEED;
+        }
+    }
+
+    private ballHitBrick (){
+
     }
 
 }

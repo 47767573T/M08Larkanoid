@@ -12,7 +12,10 @@ var mainState = (function (_super) {
         this.bricksRow = 5;
         this.bricksCol = 10;
         //var de movimiento
-        this.BALL_MAX_SPEED = 200;
+        this.BALL_MAX_SPEED = 400;
+        this.BALL_MIN_SPEED = 200;
+        this.BALL_ACCELERATION = 20;
+        this.onGame = false;
         this.FB_MAX_SPEED = 200;
         this.FB_FRICTION = 150;
         this.FB_ACCELERATION = 180;
@@ -49,15 +52,17 @@ var mainState = (function (_super) {
         this.ball = this.add.sprite(this.world.centerX, this.world.centerY, 'ball');
         this.ball.scale.setTo(0.5, 0.5);
         this.physics.enable(this.ball);
-        this.ball.body.maxVelocity.setTo(this.BALL_MAX_SPEED);
+        this.ball.body.bounce.setTo(1.2);
+        this.ball.body.maxVelocity.setTo(this.BALL_MAX_SPEED, this.BALL_MAX_SPEED);
         this.ball.body.collideWorldBounds = true;
-        this.ball.body.bounce.setTo(1);
     };
     mainState.prototype.createPad = function () {
         this.pad = this.add.sprite(this.world.centerX, 440, 'pad');
         this.pad.scale.setTo(0.5, 0.5);
         this.physics.enable(this.pad);
+        this.pad.body.bounce.set(1.2);
         this.pad.body.collideWorldBounds = true;
+        ;
         this.pad.body.immovable = true;
     };
     mainState.prototype.createBricks = function (row, col) {
@@ -98,24 +103,29 @@ var mainState = (function (_super) {
         _super.prototype.update.call(this);
         this.padMove();
         this.ballMove();
+        if (!this.onGame) {
+            this.ball.body.velocity.x = this.BALL_MIN_SPEED;
+            this.ball.body.velocity.y = this.BALL_MIN_SPEED;
+        }
+        this.physics.arcade.collide(this.ball, this.pad, this.ballHitPad, null, this);
+        this.physics.arcade.collide(this.ball, this.pad);
         //this.fireballMove();
         //this.fireball.rotation = this.physics.arcade.angleToPointer(this.pad)
     };
     mainState.prototype.padMove = function () {
         if (this.cursor.left.isDown) {
-            this.pad.body.velocity.x = -this.FB_ACCELERATION;
+            this.pad.body.velocity.x = -this.BALL_MAX_SPEED;
         }
         else if (this.cursor.right.isDown) {
-            this.pad.body.velocity.x = this.FB_ACCELERATION;
+            this.pad.body.velocity.x = this.BALL_MAX_SPEED;
         }
         else {
             this.pad.body.velocity.x = 0;
         }
-        //variables de movimiento
-        this.physics.enable(this.pad);
-        this.fireball.body.collideWorldBounds = true; //Colision
     };
     mainState.prototype.ballMove = function () {
+        this.physics.enable(this.ball);
+        this.ball.body.collideWorldBounds = true; //Colision
     };
     mainState.prototype.fireballMove = function () {
         if (this.cursor.left.isDown) {
@@ -134,6 +144,14 @@ var mainState = (function (_super) {
             this.fireball.body.acceleration.y = 0;
             this.fireball.body.acceleration.x = 0;
         }
+    };
+    mainState.prototype.ballHitPad = function (ball, pad) {
+        if (ball.body.velocity.x != this.BALL_MIN_SPEED) {
+            this.ball.body.acceleration.y = this.BALL_MIN_SPEED;
+            this.ball.body.acceleration.x = this.BALL_MIN_SPEED;
+        }
+    };
+    mainState.prototype.ballHitBrick = function () {
     };
     return mainState;
 })(Phaser.State);
