@@ -15,10 +15,15 @@ var mainState = (function (_super) {
         this.BALL_MAX_SPEED = 400;
         this.BALL_MIN_SPEED = 200;
         this.BALL_ACCELERATION = 20;
-        this.onGame = false;
+        this.PAD_MAX_SPEED = 500;
+        this.PAD_LIVES = 3;
+        this.BRICK_LIVES = 3;
         this.FB_MAX_SPEED = 200;
         this.FB_FRICTION = 150;
         this.FB_ACCELERATION = 180;
+        //Var de Scores
+        this.score_lives = this.PAD_LIVES;
+        this.SCORE_MARGIN = 10;
         //Var animacion
         this.fireballFrameWitdh = 3072 / 6;
         this.fireballFrameRate = 200;
@@ -26,7 +31,9 @@ var mainState = (function (_super) {
     mainState.prototype.preload = function () {
         _super.prototype.preload.call(this);
         this.load.spritesheet('fireball', 'assets/flameShotSet.png', this.fireballFrameWitdh, 512, 6);
-        this.load.image('brick', 'assets/png/element_blue_rectangle.png');
+        this.load.image('brick1', 'assets/png/element_blue_rectangle.png');
+        this.load.image('brick2', 'assets/png/element_green_rectangle.png');
+        this.load.image('brick3', 'assets/png/element_red_rectangle.png');
         this.load.image('pad', 'assets/png/paddleBlu.png');
         this.load.image('ball', 'assets/png/ballBlue.png');
         this.load.image('bg', 'assets/bgSpace.png');
@@ -39,6 +46,7 @@ var mainState = (function (_super) {
         this.createPad();
         //this.createFireball();
         this.createBricks(this.bricksRow, this.bricksCol);
+        this.createScores();
         this.cursor = this.input.keyboard.createCursorKeys();
         this.physics.arcade.checkCollision.down = false;
     };
@@ -55,15 +63,19 @@ var mainState = (function (_super) {
         this.ball.body.bounce.setTo(1.2);
         this.ball.body.maxVelocity.setTo(this.BALL_MAX_SPEED, this.BALL_MAX_SPEED);
         this.ball.body.collideWorldBounds = true;
+        this.ball.checkWorldBounds = true;
+        this.ball.events.onOutOfBounds.add(this.ballOut, this);
+        //this.ball.body.velocity.x= this.BALL_MIN_SPEED;
+        this.ball.body.velocity.y = this.BALL_MIN_SPEED;
     };
     mainState.prototype.createPad = function () {
         this.pad = this.add.sprite(this.world.centerX, 440, 'pad');
-        this.pad.scale.setTo(0.5, 0.5);
+        this.pad.scale.setTo(0.6, 0.6);
         this.physics.enable(this.pad);
         this.pad.body.bounce.set(1.2);
         this.pad.body.collideWorldBounds = true;
-        ;
         this.pad.body.immovable = true;
+        this.pad.health = this.PAD_LIVES;
     };
     mainState.prototype.createBricks = function (row, col) {
         this.bricks = this.add.group();
@@ -71,12 +83,20 @@ var mainState = (function (_super) {
         this.bricks.physicsBodyType = Phaser.Physics.ARCADE;
         for (var j = 0; j < row; j++) {
             for (var i = 0; i < col; i++) {
-                var brick = new Brick(this.game, i * 50 + 30, j * 20 + 30, 'brick');
+                var brick = new Brick(this.game, i * 50 + 30, j * 20 + 30, 'brick1');
                 brick.scale.setTo(0.5, 0.5);
+                brick.health = this.BRICK_LIVES;
                 this.bricks.add(brick);
             }
         }
     };
+    mainState.prototype.createScores = function () {
+        var width = this.scale.bounds.width;
+        var height = this.scale.bounds.height;
+        this.scoreLives = this.add.text(this.pad.x, this.pad.y, "-" + this.pad.health + "-", { font: "10px Arial", fill: "#ffffff" });
+        this.scoreLives.anchor.setTo(0.5, 0.5);
+    };
+    ;
     /*    private createFireball(){
             var anim;
     
@@ -103,21 +123,18 @@ var mainState = (function (_super) {
         _super.prototype.update.call(this);
         this.padMove();
         this.ballMove();
-        if (!this.onGame) {
-            this.ball.body.velocity.x = this.BALL_MIN_SPEED;
-            this.ball.body.velocity.y = this.BALL_MIN_SPEED;
-        }
+        this.updateScore();
         this.physics.arcade.collide(this.ball, this.pad, this.ballHitPad, null, this);
-        this.physics.arcade.collide(this.ball, this.pad);
+        this.physics.arcade.collide(this.ball, this.bricks, this.ballHitBrick, null, this);
         //this.fireballMove();
         //this.fireball.rotation = this.physics.arcade.angleToPointer(this.pad)
     };
     mainState.prototype.padMove = function () {
         if (this.cursor.left.isDown) {
-            this.pad.body.velocity.x = -this.BALL_MAX_SPEED;
+            this.pad.body.velocity.x = -this.PAD_MAX_SPEED;
         }
         else if (this.cursor.right.isDown) {
-            this.pad.body.velocity.x = this.BALL_MAX_SPEED;
+            this.pad.body.velocity.x = this.PAD_MAX_SPEED;
         }
         else {
             this.pad.body.velocity.x = 0;
@@ -125,33 +142,54 @@ var mainState = (function (_super) {
     };
     mainState.prototype.ballMove = function () {
         this.physics.enable(this.ball);
-        this.ball.body.collideWorldBounds = true; //Colision
+        this.ball.body.collideWorldBounds = true;
     };
-    mainState.prototype.fireballMove = function () {
-        if (this.cursor.left.isDown) {
-            this.fireball.body.acceleration.x = -this.FB_ACCELERATION;
+    /*  private fireballMove(){
+    
+            if (this.cursor.left.isDown) {
+                this.fireball.body.acceleration.x =-this.FB_ACCELERATION;
+    
+            } else if (this.cursor.right.isDown) {
+                this.fireball.body.acceleration.x =this.FB_ACCELERATION;
+    
+            } else if (this.cursor.up.isDown) {
+                this.fireball.body.acceleration.y =-this.FB_ACCELERATION;
+    
+            } else if (this.cursor.down.isDown) {
+                this.fireball.body.acceleration.y =this.FB_ACCELERATION;
+            } else {
+                this.fireball.body.acceleration.y =0;
+                this.fireball.body.acceleration.x =0;
+            }
         }
-        else if (this.cursor.right.isDown) {
-            this.fireball.body.acceleration.x = this.FB_ACCELERATION;
-        }
-        else if (this.cursor.up.isDown) {
-            this.fireball.body.acceleration.y = -this.FB_ACCELERATION;
-        }
-        else if (this.cursor.down.isDown) {
-            this.fireball.body.acceleration.y = this.FB_ACCELERATION;
-        }
-        else {
-            this.fireball.body.acceleration.y = 0;
-            this.fireball.body.acceleration.x = 0;
-        }
-    };
+    */
     mainState.prototype.ballHitPad = function (ball, pad) {
         if (ball.body.velocity.x != this.BALL_MIN_SPEED) {
-            this.ball.body.acceleration.y = this.BALL_MIN_SPEED;
-            this.ball.body.acceleration.x = this.BALL_MIN_SPEED;
+            this.ball.body.velocity.y = this.BALL_MIN_SPEED;
+            if (this.ball.body.velocity.x <= 0) {
+                this.ball.body.velocity.x = this.BALL_MIN_SPEED;
+            }
+            else if (this.ball.body.velocity.x > 0) {
+                this.ball.body.velocity.x = -this.BALL_MIN_SPEED;
+            }
         }
     };
-    mainState.prototype.ballHitBrick = function () {
+    mainState.prototype.ballHitBrick = function (ball, brick) {
+        brick.damage(1);
+        if (brick.health == 2)
+            brick.loadTexture('brick2');
+        else if (brick.health == 1)
+            brick.loadTexture('brick3');
+        if (ball.body.velocity.x != this.BALL_MAX_SPEED) {
+            this.ball.body.velocity.y += this.BALL_ACCELERATION;
+            this.ball.body.velocity.x += this.BALL_ACCELERATION;
+        }
+    };
+    mainState.prototype.updateScore = function () {
+        this.scoreLives.x = this.pad.x;
+        this.scoreLives.y = this.pad.y;
+    };
+    mainState.prototype.ballOut = function () {
     };
     return mainState;
 })(Phaser.State);

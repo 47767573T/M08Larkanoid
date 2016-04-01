@@ -7,6 +7,7 @@ class mainState extends Phaser.State {
     //private brick:Phaser.Sprite;
     private pad:Phaser.Sprite;
     private ball:Phaser.Sprite;
+    private scoreLives:Phaser.Text;
 
     //var de items
     private bricksRow = 5;
@@ -16,11 +17,18 @@ class mainState extends Phaser.State {
     private BALL_MAX_SPEED = 400;
     private BALL_MIN_SPEED = 200;
     private BALL_ACCELERATION = 20;
-    private onGame = false;
+    private PAD_MAX_SPEED = 500;
+    private PAD_LIVES = 3;
+    private BRICK_LIVES = 3;
 
     private FB_MAX_SPEED = 200;
     private FB_FRICTION = 150;
     private FB_ACCELERATION = 180;
+
+    //Var de Scores
+    private score_lives = this.PAD_LIVES;
+    private SCORE_MARGIN = 10;
+
 
     //Var animacion
     private fireballFrameWitdh = 3072/6;
@@ -37,7 +45,9 @@ class mainState extends Phaser.State {
             ,512
             ,6);
 
-        this.load.image('brick', 'assets/png/element_blue_rectangle.png');
+        this.load.image('brick1', 'assets/png/element_blue_rectangle.png');
+        this.load.image('brick2', 'assets/png/element_green_rectangle.png');
+        this.load.image('brick3', 'assets/png/element_red_rectangle.png');
         this.load.image('pad', 'assets/png/paddleBlu.png');
         this.load.image('ball', 'assets/png/ballBlue.png');
         this.load.image('bg', 'assets/bgSpace.png');
@@ -54,6 +64,7 @@ class mainState extends Phaser.State {
         //this.createFireball();
 
         this.createBricks(this.bricksRow, this.bricksCol);
+        this.createScores();
 
         this.cursor = this.input.keyboard.createCursorKeys();
         this.physics.arcade.checkCollision.down = false;
@@ -76,19 +87,25 @@ class mainState extends Phaser.State {
         this.ball.body.maxVelocity.setTo(this.BALL_MAX_SPEED, this.BALL_MAX_SPEED);
         this.ball.body.collideWorldBounds = true;
 
+        this.ball.checkWorldBounds = true;
+        this.ball.events.onOutOfBounds.add(this.ballOut, this);
+
+        //this.ball.body.velocity.x= this.BALL_MIN_SPEED;
+        this.ball.body.velocity.y= this.BALL_MIN_SPEED;
+
     }
 
     private createPad(){
 
         this.pad = this.add.sprite(this.world.centerX,440, 'pad');
 
-        this.pad.scale.setTo(0.5, 0.5);
+        this.pad.scale.setTo(0.6, 0.6);
         this.physics.enable(this.pad);
 
-        this.pad.body.bounce.set(1.2)
-        this.pad.body.collideWorldBounds = true;        ;
+        this.pad.body.bounce.set(1.2);
+        this.pad.body.collideWorldBounds = true;
         this.pad.body.immovable = true;
-
+        this.pad.health = this.PAD_LIVES;
     }
 
     private createBricks(row, col){
@@ -98,15 +115,23 @@ class mainState extends Phaser.State {
 
         for (var j = 0; j < row; j++){
             for(var i = 0; i < col; i++){
-                var brick = new Brick (this.game, i*50+30, j*20+30, 'brick');
+                var brick = new Brick (this.game, i*50+30, j*20+30, 'brick1');
                 brick.scale.setTo(0.5, 0.5);
+                brick.health = this.BRICK_LIVES;
                 this.bricks.add(brick);
 
-                //this.brick = this.add.sprite(i*50+30, j*20+20, 'brick');
-                //
             }
         }
     }
+
+    private createScores() {
+        var width = this.scale.bounds.width;
+        var height = this.scale.bounds.height;
+
+        this.scoreLives = this.add.text(this.pad.x, this.pad.y, "-"+this.pad.health+"-",
+            {font: "10px Arial", fill: "#ffffff"});
+        this.scoreLives.anchor.setTo(0.5, 0.5);
+    };
 
 /*    private createFireball(){
         var anim;
@@ -136,44 +161,35 @@ class mainState extends Phaser.State {
 
         this.padMove();
         this.ballMove();
-
-        if (!this.onGame){
-            this.ball.body.velocity.x= this.BALL_MIN_SPEED;
-            this.ball.body.velocity.y= this.BALL_MIN_SPEED;
-
-        }
+        this.updateScore();
 
         this.physics.arcade.collide(this.ball, this.pad, this.ballHitPad, null, this);
-        this.physics.arcade.collide(this.ball, this.pad);
-
+        this.physics.arcade.collide(this.ball, this.bricks, this.ballHitBrick, null, this);
 
         //this.fireballMove();
-
         //this.fireball.rotation = this.physics.arcade.angleToPointer(this.pad)
     }
 
     private padMove(){
-
         if (this.cursor.left.isDown) {
-            this.pad.body.velocity.x = -this.BALL_MAX_SPEED;
+            this.pad.body.velocity.x = -this.PAD_MAX_SPEED;
         }else if (this.cursor.right.isDown) {
-            this.pad.body.velocity.x =this.BALL_MAX_SPEED;
+            this.pad.body.velocity.x =this.PAD_MAX_SPEED;
         } else {
             this.pad.body.velocity.x = 0;
         }
-
 
 
     }
 
     private ballMove(){
         this.physics.enable(this.ball);
-        this.ball.body.collideWorldBounds = true;       //Colision
+        this.ball.body.collideWorldBounds = true;
 
 
     }
 
-    private fireballMove(){
+/*  private fireballMove(){
 
         if (this.cursor.left.isDown) {
             this.fireball.body.acceleration.x =-this.FB_ACCELERATION;
@@ -191,19 +207,39 @@ class mainState extends Phaser.State {
             this.fireball.body.acceleration.x =0;
         }
     }
-
+*/
     private ballHitPad(ball:Phaser.Sprite, pad:Phaser.Sprite){
 
         if (ball.body.velocity.x != this.BALL_MIN_SPEED){
-            this.ball.body.acceleration.y = this.BALL_MIN_SPEED;
-            this.ball.body.acceleration.x = this.BALL_MIN_SPEED;
+            this.ball.body.velocity.y = this.BALL_MIN_SPEED;
+
+            if (this.ball.body.velocity.x <= 0) { this.ball.body.velocity.x = this.BALL_MIN_SPEED; }
+            else if (this.ball.body.velocity.x > 0) { this.ball.body.velocity.x = -this.BALL_MIN_SPEED; }
         }
     }
 
-    private ballHitBrick (){
+    private ballHitBrick (ball:Phaser.Sprite, brick:Phaser.Sprite){
 
+        brick.damage(1);
+        if (brick.health == 2) brick.loadTexture('brick2');
+        else if (brick.health == 1) brick.loadTexture('brick3');
+
+        if (ball.body.velocity.x != this.BALL_MAX_SPEED){
+            this.ball.body.velocity.y += this.BALL_ACCELERATION;
+            this.ball.body.velocity.x += this.BALL_ACCELERATION;
+        }
     }
 
+    private updateScore(){
+        this.scoreLives.x = this.pad.x;
+        this.scoreLives.y = this.pad.y;
+    }
+
+    private ballOut(){
+
+
+
+    }
 }
 
 class SimpleGame {
@@ -228,11 +264,12 @@ class Brick extends Phaser.Sprite {
         this.body.bounce.setTo(1);
         this.body.immovable = true;
 
-    }
 
+    }
     update():void {
         super.update();
     }
+
 }
 
 
